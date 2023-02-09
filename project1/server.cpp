@@ -81,7 +81,7 @@ int main(int argc, char** argv) {
     std::cout << "Server Initialized..." << std::endl;
 
     // allocate buffers
-    struct sockaddr new_client;
+    struct sockaddr_storage new_client;
     socklen_t len;
 
     std::array<char, k_buf_len> recv_buf, send_buf, host_buf, service_buf;
@@ -89,8 +89,10 @@ int main(int argc, char** argv) {
     std::unordered_map<std::string, std::unique_ptr<Client>> clients;
 
     while(1) {
+        len = sizeof(new_client);
         std::memset(&new_client, 0, sizeof(new_client));
-        std::size_t n = recvfrom(socket_fd, recv_buf.data(), k_buf_len - 1, 0, &new_client, &len);
+        std::size_t n = recvfrom(socket_fd, recv_buf.data(), k_buf_len - 1, 0,
+                (struct sockaddr*) &new_client, &len);
 
         int s = getnameinfo((struct sockaddr*)&new_client, len, host_buf.data(), NI_MAXHOST,
                    service_buf.data(), NI_MAXSERV, NI_NUMERICSERV);
@@ -116,7 +118,7 @@ int main(int argc, char** argv) {
         std::cout << "Packet type: " << packet_type << std::endl;
         
         // janky workaround to prevent double-free
-        auto c = std::make_unique<Client>(len, &new_client);
+        auto c = std::make_unique<Client>(len, (struct sockaddr*) &new_client);
         if(packet_type == "GREETING" ) {
 
             if(clients.contains(key)) {
