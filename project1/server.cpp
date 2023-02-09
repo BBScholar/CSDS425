@@ -49,15 +49,14 @@ int main(int argc, char** argv) {
     argv++;
 
     int socket_fd;
-    
     struct sockaddr_in server;
+    unsigned short port;
 
     if(argc < 1) {
         std::cout << "Not enough arguments. Usage: server <port>" << std::endl;
         return 1;
     }
     
-    unsigned short port;
     try {
         port =  (unsigned short) std::stoul(argv[0]);
     } catch(const std::invalid_argument& e) {
@@ -93,7 +92,7 @@ int main(int argc, char** argv) {
         std::memset(&new_client, 0, sizeof(new_client));
         std::size_t n = recvfrom(socket_fd, recv_buf.data(), k_buf_len - 1, 0, &new_client, &len);
 
-        int s = getnameinfo((struct sockaddr*)&new_client, sizeof(new_client), host_buf.data(), NI_MAXHOST,
+        int s = getnameinfo((struct sockaddr*)&new_client, len, host_buf.data(), NI_MAXHOST,
                    service_buf.data(), NI_MAXSERV, NI_NUMERICSERV);
     
         if(s == 0) {
@@ -111,12 +110,14 @@ int main(int argc, char** argv) {
         key += ":";
         key += service_str;
 
-        const auto packet_type = (uint8_t) recv_buf[0];
+        json data = json::parse(recv_buf);
+        const auto packet_type = data["type"].get<std::string>();
+
+        std::cout << "Packet type: " << packet_type << std::endl;
         
         // janky workaround to prevent double-free
         auto c = std::make_unique<Client>(len, &new_client);
-
-        if(packet_type == PacketGreeting) {
+        if(packet_type == "GREETING" ) {
 
             if(clients.contains(key)) {
                 // TODO: duplicate addr 
@@ -127,15 +128,19 @@ int main(int argc, char** argv) {
             std::cout << "Adding client to list: " << key << std::endl;
 
             clients.insert({key, std::move(c)});
-        } else if(packet_type == PacketMessage) {
+        } else if(packet_type == "MESSAGE" ) {
+            const auto incoming_message = data["message"].get<std::string>();
 
-            send_buf[0] = PacketType::PacketIncoming;
-            // TODO: how do I encode the data?
-            std::sprintf(&send_buf[1], "%s\0%s\0%s", host_str, service_str, message);
+            json send_packet = {
+                {"type", "INCOMING"},
+                {"origin", key},
+                {"message", incoming_message}
+            };
+
+            const std::string msg = send_packet.dump();
 
             for(auto iter = clients.begin(); iter != clients.end(); ++iter) {
                 if(sendto(socket_fd, msg.data(), msg.size() + 1, 0, iter->second->addr, iter->second->len) < 0) {
-                    // TODO: error here
                     perror("send to all clients");
                     continue;
                 }

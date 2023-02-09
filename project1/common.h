@@ -2,6 +2,9 @@
 
 #include <cinttypes>
 
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
+
 #define DEBUG
 
 const char* k_default_port = "9090";

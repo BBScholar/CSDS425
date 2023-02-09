@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.11)
 project(project1)
 
 include(FetchContent)
@@ -6,9 +6,9 @@ include(CheckIPOSupported)
 
 set(CMAKE_CXX_STANDARD 20)
 
-file(GLOB_RECURSE include_files
-    
-)
+# fetch json library
+FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.2/json.tar.xz)
+FetchContent_MakeAvailable(json)
 
 add_executable(client
     client.cpp
@@ -19,6 +19,9 @@ add_executable(server
     server.cpp 
     common.h
 )
+
+target_link_libraries(server PRIVATE nlohmann_json::nlohmann_json)
+target_link_libraries(client PRIVATE nlohmann_json::nlohmann_json)
 
 check_ipo_supported(RESULT supported OUTPUT error)
 

@@ -9,7 +9,6 @@
 #include <cstdlib>
 #include <cstring>
 
-
 #include <sstream>
 #include <memory>
 #include <array>
@@ -24,6 +23,17 @@
 #include <netinet/in.h>
 
 #include "common.h"
+
+void socketsend(int fd, const json& data) {
+    std::array<char, k_buf_len> buf;
+
+    std::string str = data.dump();
+
+    if(send(fd, str.data(), str.size() + 1, 0) < 0) {
+        perror("send");
+        exit(3);
+    }
+}
 
 int main(int argc, char** argv) {
     argc--;
@@ -57,13 +67,9 @@ int main(int argc, char** argv) {
         return 2;
     }
 
-    // TODO: check for int conversion error
-    //
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(port);
-    // server_addr.sin_addr.s_addr
     std::memcpy((char*)&server_addr.sin_addr, hp->h_addr_list[0], hp->h_length); 
-
 
     // socket setup
     if((socket_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
@@ -79,27 +85,24 @@ int main(int argc, char** argv) {
     }
 
     std::cout << "Client started..." << std::endl;
+
+    std::array<char, k_buf_len> buf;
     
     // setup select data
     fd_set read_set;
 
     // setup select timeout
     struct timeval tv;
-    tv.tv_sec = 5;
-    tv.tv_usec = 0;
     
-    // setup read buffer
-    std::array<char, k_buf_len> buf;
+    {
+        json greet = {
+            {"type", "GREETING"}
+        };
 
-    // send greeting
-    std::fill(std::begin(buf), std::end(buf), 0);
-    buf[0] = PacketType::PacketGreeting;
-
-    if(sendto(socket_fd, buf.data(), 1, 0, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-        perror("send greeting");
-        return 3;
+        socketsend(socket_fd, greet);
     }
-    printf("Greeting sent\n");
+    
+    std::cout << "] " << std::flush;
 
     // enter main loop
     while(1) {
@@ -110,6 +113,10 @@ int main(int argc, char** argv) {
         FD_SET(socket_fd, &read_set);
         // max fd used in select syscall
         const int max_fd = socket_fd + 1;
+        
+        // set timeout
+        tv.tv_sec = 5;
+        tv.tv_usec = 0;
 
         // wait for data
         int ready = select(max_fd, &read_set, NULL, NULL, &tv);
@@ -118,12 +125,12 @@ int main(int argc, char** argv) {
             std::cerr << "select()" << std::endl;
             continue;
         } else if(!ready) {
-            std::cout << "No data within timeout" << std::endl;
+ //             std::cout << "No data within timeout" << std::endl;
             continue;
         }
 
         if(FD_ISSET(0, &read_set)) {
-            std::cout << "update on command line" << std::endl;
+            // std::cout << "update on command line" << std::endl;
             std::string s;
             std::getline(std::cin, s);
 
@@ -134,28 +141,38 @@ int main(int argc, char** argv) {
                 continue;
             }
 
-            buf[0] = PacketType::PacketMessage;
-            std::strcpy(&buf[1], s.c_str()); // maybe this should be strncpy
-            if(send(socket_fd, buf.data(), 2 + s.size(), 0) < 0) {
-                perror("send");
-            }
+
+            json data = {
+                {"type", "MESSAGE"},
+                {"message", s}
+            };
+            
+            socketsend(socket_fd, data);
+
+            std::cout << "] " << std::flush;
         }
         if(FD_ISSET(socket_fd, &read_set)) {
-            std::cout << "update on socket" << std::endl;
             int n = recv(socket_fd, buf.data(), buf.size() - 1, 0);
             buf[buf.size() - 1] = '\0';
 
-            const auto packet_type = (uint8_t) buf[0];
-            if(packet_type != PacketType::PacketIncoming) {
-                continue;
-            }
-            const auto addr_len = (uint8_t) buf[1];
+            json data = json::parse(buf.data());
+            const auto packet_type = data["type"].get<std::string>();
+            const auto host = data["origin"].get<std::string>();
+            const auto message = data["message"].get<std::string>();
 
-
-            std::string sender_addr, sender_port, message;
-            
-            std::cout << "<From: " << sender_addr << ":" << sender_port << ">: ";
-            std::cout << message << std::endl;
+            /*
+            print("\u001B[s", end="")     # Save current cursor position
+            print("\u001B[A", end="")     # Move cursor up one line
+            print("\u001B[999D", end="")  # Move cursor to beginning of line
+            print("\u001B[S", end="")     # Scroll up/pan window down 1 line
+            print("\u001B[L", end="")     # Insert new line
+            print(status_msg, end="")     # Print output status msg
+            print("\u001B[u", end="")     # Jump back to saved cursor position
+            */
+            std::cout << "\u001B[s" << "\u001B[A" << "\u001B[999D" << "\u001B[S" << "\u001B[L";
+            std::cout << "<From: " << host << ">: ";
+            std::cout << message << '\n';
+            std::cout << "\u001B[u" << std::flush;
         }
     }
 
