@@ -89,6 +89,8 @@ int main(int argc, char** argv) {
         std::size_t n = recvfrom(socket_fd, recv_buf.data(), k_buf_len - 1, 0,
                 (struct sockaddr*) &new_client, &len);
 
+        recv_buf[n] = '\0';
+
         int s = getnameinfo((struct sockaddr*)&new_client, len, host_buf.data(), NI_MAXHOST,
                    service_buf.data(), NI_MAXSERV, NI_NUMERICSERV);
     
@@ -137,7 +139,7 @@ int main(int argc, char** argv) {
             const std::string msg = send_packet.dump();
 
             for(auto iter = clients.begin(); iter != clients.end(); ++iter) {
-                if(sendto(socket_fd, msg.data(), msg.size() + 1, 0, (struct sockaddr*) &iter->second->addr, iter->second->len) < 0) {
+                if(sendto(socket_fd, msg.data(), msg.size(), 0, (struct sockaddr*) &iter->second->addr, iter->second->len) < 0) {
                     perror("send to all clients");
                     continue;
                 }

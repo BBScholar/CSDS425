@@ -30,7 +30,7 @@ void socketsend(int fd, const json& data) {
 
     std::string str = data.dump();
 
-    if(send(fd, str.data(), str.size() + 1, 0) < 0) {
+    if(send(fd, str.data(), str.size(), 0) < 0) {
         perror("send");
         exit(3);
     }
@@ -133,7 +133,9 @@ int main(int argc, char** argv) {
         if(FD_ISSET(0, &read_set)) {
             std::string s;
             std::getline(std::cin, s);
-
+    
+            // go up a line and delete it
+            // this gets rid of the message that was just entered
             std::cout << "\u001B[1A" << "\u001B[2K" << std::flush;
 
             if(s.size() > k_max_msg_len) {
@@ -155,7 +157,8 @@ int main(int argc, char** argv) {
         }
         if(FD_ISSET(socket_fd, &read_set)) {
             int n = recv(socket_fd, buf.data(), buf.size() - 1, 0);
-            buf[buf.size() - 1] = '\0';
+            buf[n] = '\0';
+            // buf[buf.size() - 1] = '\0';
 
             json data = json::parse(buf.data());
             const auto packet_type = data["type"].get<std::string>();
@@ -177,7 +180,8 @@ int main(int argc, char** argv) {
 
             std::size_t h = std::hash<std::string>{}(host);
             uint8_t color = (h % color_range) + min_color;
-
+            
+            // Control code reference:
             // https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
             std::cout << "\u001B[s" << "\u001B[A" << "\u001B[999D" << "\u001B[S" << "\u001B[L";
             std::cout << "\u001B[38;5;" << std::to_string(color) << "m";
