@@ -2,6 +2,9 @@
 
 This is my implementation of the network chat application assigned in programming project 1. 
 
+
+![example](./images/example.png)
+
 ### Description and Features 
 
 Both the server and client applications were written in C++ using the 2020 standard. Most of the code could be ported directly to C, but
@@ -44,12 +47,13 @@ These are the packet formats in JSON below:
 | Property | Value |
 |--|--|
 | Language | C++20 |
-| Compiler | GCC via Cmake |
+| Compiler | GCC via CMake |
 | GCC Version | 12.2.1 20221121 |
 | System Architecture | X86_64 |
 | Operating System | Fedora Linux 37 |
 | Kernel Version | v6.1.9-200 |
 | CMake Version | 3.25.2 |
+| Terminal | Gnome-Terminal |
 
 As long as your compiler supports c++20, you have CMake version 3.11 or higher, and your kernel isn't ancient, this program should compiler
 fine on your Linux machine.

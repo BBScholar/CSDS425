@@ -85,7 +85,8 @@ int main(int argc, char** argv) {
         return 3;
     }
     
-    std::cout << "\u001B[2J"; // clear screen
+    std::cout << "\u001B[2J"; // clear screen and return cursor
+    std::cout << "\u001B[999B";
     std::cout << "Client started..." << std::endl;
 
     std::array<char, k_buf_len> buf;
