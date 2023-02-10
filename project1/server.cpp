@@ -1,19 +1,16 @@
 #include <cstdio>
-#include <iostream>
-#include <fstream>
 #include <stdexcept>
-#include <string>
 #include <cinttypes>
 #include <csignal>
 #include <cstdlib>
 #include <cstring>
 
-#include <unordered_set>
-#include <vector>
+#include <iostream>
+#include <fstream>
 #include <array>
-#include <sstream>
 #include <unordered_map>
 #include <memory>
+#include <string>
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -109,7 +106,21 @@ int main(int argc, char** argv) {
         key += ":";
         key += service_str;
 
-        json data = json::parse(recv_buf);
+        json data;
+
+        try {
+            data = json::parse(recv_buf);
+        } catch (json::parse_error& e) {
+            std::cerr << e.what() << std::endl; 
+            continue;
+        }
+
+
+        if(!data.contains("type")) {
+                std::cerr << "Invalid packet format" << std::endl;
+                continue;
+        }
+
         const auto packet_type = data["type"].get<std::string>();
 
         std::cout << "Packet type: " << packet_type << std::endl;
@@ -128,6 +139,11 @@ int main(int argc, char** argv) {
 
             clients.insert({key, std::move(c)});
         } else if(packet_type == "MESSAGE" ) {
+            if(!data.contains("message")) {
+                std::cerr << "No message field found. Skipping. " << std::endl; 
+                continue;
+            }
+
             const auto incoming_message = data["message"].get<std::string>();
 
             json send_packet = {

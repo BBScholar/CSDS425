@@ -159,9 +159,25 @@ int main(int argc, char** argv) {
             int n = recv(socket_fd, buf.data(), buf.size() - 1, 0);
             buf[n] = '\0';
             // buf[buf.size() - 1] = '\0';
+            json data;
+            try {
+                data = json::parse(buf.data());
+            } catch(const json::parse_error& e) {
+                std::cerr << e.what() << std::endl;
+                continue;
+            }
 
-            json data = json::parse(buf.data());
+            if(!data.contains("type")) {
+                // does not have correct fields
+                continue;
+            }
+
             const auto packet_type = data["type"].get<std::string>();
+
+            if(packet_type != "INCOMING") continue;
+            
+            if(!data.contains("origin") || !data.contains("message")) continue;
+
             const auto host = data["origin"].get<std::string>();
             const auto message = data["message"].get<std::string>();
 
