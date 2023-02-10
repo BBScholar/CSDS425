@@ -1,4 +1,5 @@
 #include <bits/types/struct_timeval.h>
+#include <functional>
 #include <iostream>
 #include <cstdio>
 #include <stdexcept>
@@ -83,7 +84,8 @@ int main(int argc, char** argv) {
         perror("connect");
         return 3;
     }
-
+    
+    std::cout << "\u001B[2J"; // clear screen
     std::cout << "Client started..." << std::endl;
 
     std::array<char, k_buf_len> buf;
@@ -125,14 +127,14 @@ int main(int argc, char** argv) {
             std::cerr << "select()" << std::endl;
             continue;
         } else if(!ready) {
- //             std::cout << "No data within timeout" << std::endl;
             continue;
         }
 
         if(FD_ISSET(0, &read_set)) {
-            // std::cout << "update on command line" << std::endl;
             std::string s;
             std::getline(std::cin, s);
+
+            std::cout << "\u001B[1A" << "\u001B[2K" << std::flush;
 
             if(s.size() > k_max_msg_len) {
                 std::cerr << "Message too long, failed to send. Max length is " << k_max_msg_len << " characters" << std::endl; 
@@ -169,9 +171,14 @@ int main(int argc, char** argv) {
             print(status_msg, end="")     # Print output status msg
             print("\u001B[u", end="")     # Jump back to saved cursor position
             */
+
+            // std::size_t hash = std::hash<std::string>(host);
+        
+            // https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
             std::cout << "\u001B[s" << "\u001B[A" << "\u001B[999D" << "\u001B[S" << "\u001B[L";
             std::cout << "<From: " << host << ">: ";
             std::cout << message << '\n';
+            std::cout << "\a"; // terminal bell 
             std::cout << "\u001B[u" << std::flush;
         }
     }
