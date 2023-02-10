@@ -169,15 +169,21 @@ int main(int argc, char** argv) {
             print("\u001B[S", end="")     # Scroll up/pan window down 1 line
             print("\u001B[L", end="")     # Insert new line
             print(status_msg, end="")     # Print output status msg
-            print("\u001B[u", end="")     # Jump back to saved cursor position
+            print("\u001B[u", end="")     # Jump ba/
             */
+            constexpr uint8_t min_color = 1;
+            constexpr uint8_t max_color = 225;
+            constexpr uint8_t color_range = max_color - min_color + 1;
 
-            // std::size_t hash = std::hash<std::string>(host);
-        
+            std::size_t h = std::hash<std::string>{}(host);
+            uint8_t color = (h % color_range) + min_color;
+
             // https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
             std::cout << "\u001B[s" << "\u001B[A" << "\u001B[999D" << "\u001B[S" << "\u001B[L";
+            std::cout << "\u001B[38;5;" << std::to_string(color) << "m";
             std::cout << "<From: " << host << ">: ";
             std::cout << message << '\n';
+            std::cout << "\u001B[38;5;255m";
             std::cout << "\a"; // terminal bell 
             std::cout << "\u001B[u" << std::flush;
         }
