@@ -24,23 +24,17 @@
 
 #include "common.h"
 
-// this is real ugly
-// not sure if there's a better alternative
+
 struct Client {
-    struct sockaddr* addr;
+    struct sockaddr_storage addr;
     socklen_t len;
 
-    Client(socklen_t plen, struct sockaddr* paddr) {
+    Client(struct sockaddr* paddr, socklen_t plen) {
         len = plen;
-        addr = static_cast<struct sockaddr*>(std::malloc(len));
-        std::memcpy(addr, paddr, plen);
+        std::memcpy(&addr, paddr, plen);
     }
 
-    Client(Client& other) = delete;
-
-    ~Client() {
-        std::free(addr);
-    }
+    ~Client() = default;
 };
 
 int main(int argc, char** argv) {
@@ -63,6 +57,7 @@ int main(int argc, char** argv) {
         std::cerr << e.what() << std::endl;
         return 2;
     }
+
     std::memset(&server, 0, sizeof(server));
     server.sin_addr.s_addr = INADDR_ANY;
     server.sin_family = AF_INET;
@@ -118,8 +113,8 @@ int main(int argc, char** argv) {
         std::cout << "Packet type: " << packet_type << std::endl;
         
         // janky workaround to prevent double-free
-        auto c = std::make_unique<Client>(len, (struct sockaddr*) &new_client);
         if(packet_type == "GREETING" ) {
+            auto c = std::make_unique<Client>((struct sockaddr*) &new_client, len);
 
             if(clients.contains(key)) {
                 // TODO: duplicate addr 
@@ -142,7 +137,7 @@ int main(int argc, char** argv) {
             const std::string msg = send_packet.dump();
 
             for(auto iter = clients.begin(); iter != clients.end(); ++iter) {
-                if(sendto(socket_fd, msg.data(), msg.size() + 1, 0, iter->second->addr, iter->second->len) < 0) {
+                if(sendto(socket_fd, msg.data(), msg.size() + 1, 0, (struct sockaddr*) &iter->second->addr, iter->second->len) < 0) {
                     perror("send to all clients");
                     continue;
                 }
