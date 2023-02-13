@@ -1,4 +1,4 @@
-#include <bits/types/struct_timeval.h>
+
 #include <functional>
 #include <iostream>
 #include <cstdio>
@@ -214,9 +214,14 @@ int main(int argc, char** argv) {
         if(FD_ISSET(socket_fd, &read_set)) {
             // recieve data from socket, make sure we only take
             // as many characters as the buffer can hold minus 1 for the null terminator that must be added
+            std::memset(buf.data(), 0, k_buf_len);
             int n = recv(socket_fd, buf.data(), buf.size() - 1, 0);
             // set null terminator
             buf[n] = '\0';
+
+            if(n == 0) {
+                continue;
+            }
 
             // parse json from packet
             // throw error if malformed
@@ -224,7 +229,8 @@ int main(int argc, char** argv) {
             try {
                 data = json::parse(buf.data());
             } catch(const json::parse_error& e) {
-                std::cerr << e.what() << std::endl;
+                // std::cerr << e.what() << std::endl;
+                std::cerr << "Cannot parse json packet, could also mean that socket is disconnected." << std::endl;
                 continue;
             }
             

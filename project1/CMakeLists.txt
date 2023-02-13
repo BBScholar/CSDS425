@@ -32,5 +32,5 @@ else()
   message(STATUS "LTO not supported")
 endif()
 
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -s")
-# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -s")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -s")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -s")

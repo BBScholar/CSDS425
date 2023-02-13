@@ -2,7 +2,6 @@
 
 This is my implementation of the network chat application assigned in programming project 1. 
 
-
 ![example](./images/example.png)
 
 ### Description and Features 
@@ -59,6 +58,8 @@ As long as your compiler supports c++20, you have CMake version 3.11 or higher, 
 fine on your Linux machine.
 
 I did not have to run anything as `sudo` on my machine.
+
+This also compiles/works on my raspberrypi.
 
 ### Dependencies:
 
