@@ -127,13 +127,22 @@ class Client:
                     "node_name" : self.name,
                     "table" : new_table
                 }
-                print(f"Sending message: {repr(update_msg)}")
+                # print(f"Sending message: {repr(update_msg)}")
                 self.sock.send(json.dumps(update_msg).encode())
 
             # time.sleep(0.05)
 
             actual_updates = []
+            has_printed = False
             while True:
+                readable, _, _ = select.select([self.sock], [], [], 1.0)
+
+                if len(readable) == 0 and not has_printed:
+                    has_printed = True
+                    print(f"No updates in 30 seconds")
+                    print(f"Results for node {self.name}: {json.dumps(self.table[self.name], indent=4, sort_keys=True)}")
+                    continue
+
                 updates = util.split_json(self.sock.recv(4096).decode())
 
                 if len(updates) == 0:
@@ -151,7 +160,7 @@ class Client:
                 self.table[u["node_name"]] = u["table"]
 
             # print(f"{self.name}: {repr(self.table)}\n")
-            print(f"{self.name}: {json.dumps(self.table, indent=4, sort_keys=True)}\n")
+            # print(f"{self.name}: {json.dumps(self.table, indent=4, sort_keys=True)}\n")
 
 def main():
     server_addr = sys.argv[1]
