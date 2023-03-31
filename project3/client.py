@@ -27,45 +27,40 @@ class Client:
         self.print_timeout = 0.5
 
     def run_dv(self):
-        start = self.name
         new_table = {}
-        
-        # checks for infinite lengths
+
         def conv(x: int) -> float:
             if x == -1:
-                return float('inf')
+                return float("inf")
             return float(x)
 
         for y in self.all_nodes:
-            new_table[y] = {}
-            new_table[y]["dist"] = {}
-            new_table[y]["next"] = []
-
+            # new_table[y] = {}
             min_dist = float("inf")
-            min_node = self.neighbors[0]
-            
-            # run the algo
-            for v in self.neighbors:
-                d = conv(self.table[start][v]["dist"])
+            min_node = None
 
-                if y != v:
-                    d += conv(self.table[v][y]["dist"])
-                
-                if d < min_dist:
-                    min_dist = d
-                    min_node = v
+            for n in self.neighbors:
+                dist = conv(self.table[self.name][n]["dist"])
 
+                if n != y:
+                    dist += conv(self.table[n][y]["dist"])
 
-            # fill in min dist
-            if min_dist == float("inf"):
-                new_table[y]["dist"] = -1
-                new_table[y]["next"] = []
+                if dist < min_dist:
+                    min_dist = dist
+                    min_node = [n]
+                    if n != y:
+                        min_node.extend(self.table[n][y]["next"])
+
+            if min_dist == float('inf'):
+                new_table[y] = {
+                    "dist":-1,
+                    "next":[]
+                }
             else:
-                new_table[y]["dist"] = int(min_dist)
-                new_table[y]["next"] = [min_node]
-
-                if min_node != y:
-                    new_table[y]["next"] += self.table[min_node][y]["next"]
+                new_table[y] = {
+                    "dist": min_dist,
+                    "next": min_node
+                }
 
         return new_table
 
@@ -103,7 +98,6 @@ class Client:
         for k in j_data.keys():
             self.table[self.name][k] = {}
             self.table[self.name][k]["dist"] = j_data[k]
-            # self.table[self.name][k]["next"] = []
             # if we are neighbors, set next to that node
             self.table[self.name][k]["next"] = [k] if j_data[k] != -1 else []
     
@@ -126,6 +120,7 @@ class Client:
             # if the tables are not equal, send an update message to server
             if first or new_table != self.table[self.name]:
                 first = False
+                self.table[self.name] = new_table
                 # send new table to server
                 update_msg = {
                     "type" : "UPDATE",
@@ -135,7 +130,7 @@ class Client:
                 print(f"Sending message: {repr(update_msg)}")
                 self.sock.send(json.dumps(update_msg).encode())
 
-            time.sleep(0.25)
+            # time.sleep(0.05)
 
             actual_updates = []
             while True:
