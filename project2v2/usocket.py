@@ -9,8 +9,11 @@ class UnreliableSocket:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        # self.reorder_packet = None
-        # self.to_reorder =
+        self.temp_packet= None
+
+        self.to_reorder = False
+        self.reorder_next = False
+        self.duplicate_count = 0
 
     def bind(self, addr: str, port: int):
         self.sock.bind((addr, port))
@@ -18,10 +21,22 @@ class UnreliableSocket:
 
     def recvfrom(self, bufsize=4096):
 
-        # if self.to_reorder and self.reorder_packet is not None:
-        #     ret = self.reorder_packet
-        #     self.reorder_packet = None
-        #     self.to_reorder = False
+        if self.to_reorder and self.reorder_next and self.temp_packet is not None:
+            print("reordering")
+            ret = self.temp_packet
+            self.temp_packet = None
+            self.to_reorder = False
+            self.reorder_next = False
+            return ret
+
+        if self.duplicate_count > 0 and self.temp_packet is not None:
+            print("generating duplicates")
+            self.duplicate_count -= 1
+            ret = self.temp_packet
+            if self.duplicate_count == 0:
+                self.temp_packet = None
+            return ret
+
 
         start_time = time.time()
         while time.time() - start_time < 0.1:
@@ -46,13 +61,18 @@ class UnreliableSocket:
                 arr = bytearray(data)
                 arr[bad_idx] = 0
                 data = bytes(arr)
-                # data[bad_idx] = 0
             elif random.random() < 0.1:
-                pass
-                # TODO: reorder
+                self.temp_packet = (addr, data)
+                self.to_reorder = True
+                self.reorder_next = False
+                continue
             elif random.random() < 0.1:
-                pass
-                # TODO: duplicate
+                self.duplicate_count = random.randint(2, 4)
+                self.duplicate_count -= 1
+                self.temp_packet = (addr, data)
+
+            if self.to_reorder and not self.reorder_next:
+                self.reorder_next = True
 
             return addr, data
 

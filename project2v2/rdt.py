@@ -201,7 +201,7 @@ class RDTSocket(UnreliableSocket):
             # store packet if its within the window
             #if window[self.clamp_seq(recv_seq)] is None:
             window[self.clamp_seq(recv_seq)] = packet
-            print(window)
+            # print(window)
 
             # move window as needed
             while window[self.clamp_seq(self.seq)] is not None:
