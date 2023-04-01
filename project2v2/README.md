@@ -3,8 +3,7 @@
 This is my implementation of the RDT sockets. It should handle dropped, corrupted, reordered, and duplicate packets.
 Sometimes it freezes part way through, not sure why, but works 95% of the time.
 My implementation was tested with a large file (sherlock.txt) as well, it works. The file is around
-6.5MB and takes around 5 minutes to send, but seems to work.
-
+6.5MB and takes around 5 minutes to send, but works.
 
 ### Environment
 
