@@ -21,6 +21,7 @@ class UnreliableSocket:
 
     def recvfrom(self, bufsize=4096):
 
+        # reorder logic
         if self.to_reorder and self.reorder_next and self.temp_packet is not None:
             print("reordering")
             ret = self.temp_packet
@@ -29,6 +30,7 @@ class UnreliableSocket:
             self.reorder_next = False
             return ret
 
+        # duplicate logic
         if self.duplicate_count > 0 and self.temp_packet is not None:
             print("generating duplicates")
             self.duplicate_count -= 1
@@ -36,7 +38,6 @@ class UnreliableSocket:
             if self.duplicate_count == 0:
                 self.temp_packet = None
             return ret
-
 
         start_time = time.time()
         while time.time() - start_time < 0.1:
@@ -56,16 +57,19 @@ class UnreliableSocket:
             # drop packet
             if random.random() < 0.1:
                 continue
+            # change a random byte
             elif random.random() < 0.1:
                 bad_idx = random.randint(0, len(data) - 1)
                 arr = bytearray(data)
                 arr[bad_idx] = 0
                 data = bytes(arr)
+            # reorder
             elif random.random() < 0.1:
                 self.temp_packet = (addr, data)
                 self.to_reorder = True
                 self.reorder_next = False
                 continue
+            # duplicate
             elif random.random() < 0.1:
                 self.duplicate_count = random.randint(2, 4)
                 self.duplicate_count -= 1

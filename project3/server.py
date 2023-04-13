@@ -91,7 +91,8 @@ class Server:
 
                 if len(updates) == 0:
                     continue
-
+        
+                # loop over each update extracted
                 for u in updates:
                     print(f"Received update: {repr(u)}")
                     if u["type"] != "UPDATE":

@@ -2,6 +2,8 @@
 import json
 from typing import List, Dict
 
+#splits raw message from socket into 1 or more messages
+# prevents multi back-to-back messages
 def split_json(s: str) -> List[Dict]:
     begin = 0
     end = 0

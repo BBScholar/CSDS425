@@ -1,0 +1,33 @@
+Results for node y: {
+    "u": {
+        "dist": 10.0,
+        "next": [
+            "w",
+            "u"
+        ]
+    },
+    "v": {
+        "dist": 4.0,
+        "next": [
+            "v"
+        ]
+    },
+    "w": {
+        "dist": 7.0,
+        "next": [
+            "w"
+        ]
+    },
+    "x": {
+        "dist": 7.0,
+        "next": [
+            "x"
+        ]
+    },
+    "z": {
+        "dist": 2.0,
+        "next": [
+            "z"
+        ]
+    }
+}

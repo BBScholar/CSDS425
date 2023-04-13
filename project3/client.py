@@ -10,6 +10,8 @@ import time
 
 import util
 
+import threading
+
 
 class Client:
 
@@ -28,29 +30,37 @@ class Client:
 
     def run_dv(self):
         new_table = {}
-
+        
+        # converts ints to floats so we can use infinity as a value
+        # treats -1 value as infinity
         def conv(x: int) -> float:
             if x == -1:
                 return float("inf")
             return float(x)
-
+        
+        # loop over all nodes in network
         for y in self.all_nodes:
-            # new_table[y] = {}
+            # min dist starts as infinity
             min_dist = float("inf")
             min_node = None
-
+            
+            # check every neighbor for shortest path
             for n in self.neighbors:
+                # calculate distance from here to neighbor
                 dist = conv(self.table[self.name][n]["dist"])
-
+                
+                # if there is more than 1 hop needed, add distance from neighbor to node y
                 if n != y:
                     dist += conv(self.table[n][y]["dist"])
-
+                
+                # if new dist is less than min, set as min
                 if dist < min_dist:
                     min_dist = dist
                     min_node = [n]
                     if n != y:
                         min_node.extend(self.table[n][y]["next"])
-
+        
+            # if min_dist is inf, set to -1 (to hold convention)
             if min_dist == float('inf'):
                 new_table[y] = {
                     "dist":-1,
@@ -61,10 +71,12 @@ class Client:
                     "dist": min_dist,
                     "next": min_node
                 }
-
+        
+        # return the updated table
         return new_table
 
     def run(self):
+        # connect to server
         self.sock.connect(self.addr)
         
         # send join message
@@ -82,7 +94,7 @@ class Client:
 
             if j_data["type"] == "JOIN_RES":
                 break
-
+        # extract data from message
         j_data = j_data["table"]
 
         # neighbors 
@@ -101,6 +113,7 @@ class Client:
             # if we are neighbors, set next to that node
             self.table[self.name][k]["next"] = [k] if j_data[k] != -1 else []
     
+        # create empty tables for each neighbor
         for n in self.neighbors:
             self.table[n] = {}
             for k in j_data.keys():
@@ -130,17 +143,27 @@ class Client:
                 # print(f"Sending message: {repr(update_msg)}")
                 self.sock.send(json.dumps(update_msg).encode())
 
-            # time.sleep(0.05)
-
             actual_updates = []
             has_printed = False
             while True:
-                readable, _, _ = select.select([self.sock], [], [], 1.0)
+                readable, _, _ = select.select([self.sock], [], [], 2.0)
 
                 if len(readable) == 0 and not has_printed:
                     has_printed = True
+
+                    with open(f"result_{self.name}.txt", "w") as f:
+                        f.write(f"Results for node {self.name}: {json.dumps(self.table[self.name], indent=4, sort_keys=True)}")
+                        f.write("\n")
+                    
+                    # self.file_lock.acquire(blocking=True)
+                    # with open("result.txt", "a") as f:
+                    #     f.write(f"Results for node {self.name}: {json.dumps(self.table[self.name], indent=4, sort_keys=True)}")
+                    #     f.write("\n")
+                    # self.file_lock.release()
+
                     print(f"No updates in 30 seconds")
                     print(f"Results for node {self.name}: {json.dumps(self.table[self.name], indent=4, sort_keys=True)}")
+                    exit(1)
                     continue
 
                 updates = util.split_json(self.sock.recv(4096).decode())
