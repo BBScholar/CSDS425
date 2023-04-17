@@ -15,8 +15,11 @@ chmod +x server.py
 ```bash
 # to test
 export http_proxy=http://127.0.0.1:8080  # or another port 
-wget google.com/
+curl google.com/
 ```
+
+Sometimes, `wget` seems to switch over to https, even when using an explicit `http://` in the url.
+Curl does not seem to exhibit this behavior
 
 ### Environment
 Fedora 37 on x86 architecture.\
