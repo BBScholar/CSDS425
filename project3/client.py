@@ -124,6 +124,7 @@ class Client:
                 self.table[n][k]["next"] = []
     
         first = True
+        print("initial state:", self.table[self.name])
 
         # start running
         while True:
@@ -134,6 +135,7 @@ class Client:
             if first or new_table != self.table[self.name]:
                 first = False
                 self.table[self.name] = new_table
+                print(json.dumps(new_table), "\n")
                 # send new table to server
                 update_msg = {
                     "type" : "UPDATE",
